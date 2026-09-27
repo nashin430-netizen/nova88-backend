@@ -4,6 +4,10 @@ import cors from "cors";
 import helmet from "helmet";
 import { PrismaClient } from "@prisma/client";
 
+import authRoutes from "./routes/auth.js";
+import gameRoutes from "./routes/games.js";
+import promotionRoutes from "./routes/promotions.js";
+
 const app = express();
 export const prisma = new PrismaClient();
 
@@ -22,35 +26,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.get("/api/games", async (req, res) => {
-  try {
-    const games = await prisma.game.findMany({
-      where: { status: true },
-      orderBy: { createdAt: "desc" }
-    });
-
-    res.json(games);
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to load games"
-    });
-  }
-});
-
-app.get("/api/promotions", async (req, res) => {
-  try {
-    const promotions = await prisma.promotion.findMany({
-      where: { status: true },
-      orderBy: { createdAt: "desc" }
-    });
-
-    res.json(promotions);
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to load promotions"
-    });
-  }
-});
+app.use("/api/auth", authRoutes);
+app.use("/api/games", gameRoutes);
+app.use("/api/promotions", promotionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
