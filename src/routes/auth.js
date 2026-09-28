@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../server.js";
-
+import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 
 router.post("/register", async (req, res) => {
