@@ -7,15 +7,18 @@ import { PrismaClient } from "@prisma/client";
 import authRoutes from "./routes/auth.js";
 import gameRoutes from "./routes/games.js";
 import promotionRoutes from "./routes/promotions.js";
+import adminRoutes from "./routes/admin.js";
 
 const app = express();
 export const prisma = new PrismaClient();
 
 app.use(helmet());
 
-app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || "http://localhost:5500"
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5500"
+  })
+);
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -27,6 +30,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/promotions", promotionRoutes);
 
