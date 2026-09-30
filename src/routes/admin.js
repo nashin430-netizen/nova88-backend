@@ -4,6 +4,11 @@ import { prisma } from "../server.js";
 
 const router = Router();
 
+
+// ===============================
+// ADMIN DASHBOARD
+// ===============================
+
 router.get(
   "/dashboard",
   requireAuth,
@@ -33,5 +38,46 @@ router.get(
     }
   }
 );
+
+
+// ===============================
+// GET ALL USERS
+// ===============================
+
+router.get(
+  "/users",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true
+        },
+        orderBy: {
+          id: "desc"
+        }
+      });
+
+      res.json({
+        users
+      });
+
+    } catch (error) {
+
+      console.error("ADMIN USERS ERROR:", error);
+
+      res.status(500).json({
+        error: "Failed to load users"
+      });
+
+    }
+  }
+);
+
 
 export default router;
