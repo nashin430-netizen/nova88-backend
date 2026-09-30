@@ -20,12 +20,14 @@ export function requireAuth(req, res, next) {
     );
 
     next();
-  } catch {
+    } catch (error) {
+    console.error("JWT VERIFY ERROR:", error.message);
+
     return res.status(401).json({
-      error: "Invalid or expired token"
+      error: "Invalid or expired token",
+      reason: error.message
     });
   }
-}
 
 export function requireAdmin(req, res, next) {
   if (req.user?.role !== "ADMIN") {
