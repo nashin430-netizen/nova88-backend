@@ -4,6 +4,7 @@ import { prisma } from "../server.js";
 
 const router = Router();
 
+
 // ===============================
 // ADMIN DASHBOARD
 // ===============================
@@ -14,7 +15,12 @@ router.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const userCount = await prisma.user.count();
+      const [userCount, gameCount, promotionCount] =
+        await Promise.all([
+          prisma.user.count(),
+          prisma.game.count(),
+          prisma.promotion.count()
+        ]);
 
       res.json({
         message: "Admin access granted",
@@ -23,16 +29,12 @@ router.get(
 
         stats: {
           users: userCount,
-          games: 0,
-          promotions: 0
+          games: gameCount,
+          promotions: promotionCount
         }
       });
-
     } catch (error) {
-      console.error(
-        "ADMIN DASHBOARD ERROR:",
-        error
-      );
+      console.error("ADMIN DASHBOARD ERROR:", error);
 
       res.status(500).json({
         error: "Failed to load admin dashboard"
@@ -52,39 +54,29 @@ router.get(
   requireAdmin,
   async (req, res) => {
     try {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true
+        },
 
-      const users =
-        await prisma.user.findMany({
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true
-          },
-
-          orderBy: {
-            id: "desc"
-          }
-        });
-
+        orderBy: {
+          id: "desc"
+        }
+      });
 
       res.json({
         users
       });
-
-
     } catch (error) {
-
-      console.error(
-        "ADMIN USERS ERROR:",
-        error
-      );
+      console.error("ADMIN USERS ERROR:", error);
 
       res.status(500).json({
         error: "Failed to load users"
       });
-
     }
   }
 );
@@ -99,88 +91,53 @@ router.patch(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-
     try {
-
-      const userId =
-        Number(req.params.id);
-
+      const userId = Number(req.params.id);
       const { role } = req.body;
 
-
       // Validate role
-
-      if (
-        !["USER", "ADMIN"].includes(role)
-      ) {
-
+      if (!["USER", "ADMIN"].includes(role)) {
         return res.status(400).json({
           error: "Invalid role"
         });
-
       }
 
-
-      // Prevent admin from changing
-      // their own role
-
-      if (
-        userId === req.user.id
-      ) {
-
+      // Prevent changing own role
+      if (userId === req.user.id) {
         return res.status(400).json({
-          error:
-            "You cannot change your own role"
+          error: "You cannot change your own role"
         });
-
       }
 
+      const user = await prisma.user.update({
+        where: {
+          id: userId
+        },
 
-      const user =
-        await prisma.user.update({
+        data: {
+          role: role
+        },
 
-          where: {
-            id: userId
-          },
-
-          data: {
-            role: role
-          },
-
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true
-          }
-
-        });
-
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true
+        }
+      });
 
       res.json({
-        message:
-          "User role updated successfully",
-
+        message: "User role updated successfully",
         user
       });
-
-
     } catch (error) {
-
-      console.error(
-        "CHANGE ROLE ERROR:",
-        error
-      );
-
+      console.error("CHANGE ROLE ERROR:", error);
 
       res.status(500).json({
-        error:
-          "Failed to update user role"
+        error: "Failed to update user role"
       });
-
     }
-
   }
 );
 
@@ -194,60 +151,38 @@ router.delete(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-
     try {
+      const userId = Number(req.params.id);
 
-      const userId =
-        Number(req.params.id);
-
-
-      // Prevent admin from deleting
-      // themselves
-
-      if (
-        userId === req.user.id
-      ) {
-
+      // Prevent deleting yourself
+      if (userId === req.user.id) {
         return res.status(400).json({
-          error:
-            "You cannot delete yourself"
+          error: "You cannot delete yourself"
         });
-
       }
 
-
       await prisma.user.delete({
-
         where: {
           id: userId
         }
-
       });
-
 
       res.json({
-        message:
-          "User deleted successfully"
+        message: "User deleted successfully"
       });
-
-
     } catch (error) {
-
-      console.error(
-        "DELETE USER ERROR:",
-        error
-      );
-
+      console.error("DELETE USER ERROR:", error);
 
       res.status(500).json({
-        error:
-          "Failed to delete user"
+        error: "Failed to delete user"
       });
-
     }
-
   }
 );
 
+
+// ===============================
+// EXPORT ROUTER
+// ===============================
 
 export default router;
