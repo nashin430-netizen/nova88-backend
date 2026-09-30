@@ -8,7 +8,7 @@ import authRoutes from "./routes/auth.js";
 import gameRoutes from "./routes/games.js";
 import promotionRoutes from "./routes/promotions.js";
 import adminRoutes from "./routes/admin.js";
-
+import gameRoutes from "./routes/gameRoutes.js";
 const app = express();
 export const prisma = new PrismaClient();
 
@@ -33,7 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/promotions", promotionRoutes);
-
+app.use("/api/admin/games", gameRoutes);
 app.use((req, res) => {
   res.status(404).json({
     error: "Route not found"
