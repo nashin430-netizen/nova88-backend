@@ -20,7 +20,7 @@ export function requireAuth(req, res, next) {
     );
 
     next();
-      } catch (error) {
+  } catch (error) {
     console.error("JWT VERIFY ERROR:", error.message);
 
     return res.status(401).json({
@@ -28,7 +28,8 @@ export function requireAuth(req, res, next) {
       reason: error.message
     });
   }
-  
+}
+
 export function requireAdmin(req, res, next) {
   if (req.user?.role !== "ADMIN") {
     return res.status(403).json({
@@ -38,4 +39,3 @@ export function requireAdmin(req, res, next) {
 
   next();
 }
-
