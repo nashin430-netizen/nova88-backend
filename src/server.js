@@ -9,6 +9,7 @@ import gameRoutes from "./routes/games.js";
 import promotionRoutes from "./routes/promotions.js";
 import adminRoutes from "./routes/admin.js";
 import adminGameRoutes from "./routes/gameRoutes.js";
+import depositRoutes from "./routes/deposits.js";
 
 const app = express();
 
@@ -52,6 +53,8 @@ app.use("/api/games", gameRoutes);
 app.use("/api/promotions", promotionRoutes);
 
 app.use("/api/admin/games", adminGameRoutes);
+
+app.use("/api/deposits", depositRoutes);
 
 
 // =====================================
