@@ -50,7 +50,11 @@ app.use("/api/admin", adminRoutes);
 
 app.use("/api/games", gameRoutes);
 
+// User promotions
 app.use("/api/promotions", promotionRoutes);
+
+// Admin promotions
+app.use("/api/admin/promotions", promotionRoutes);
 
 app.use("/api/admin/games", adminGameRoutes);
 
