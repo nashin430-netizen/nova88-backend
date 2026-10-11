@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
-import { prisma } from "../server.js";
+import { prisma } from "../lib/prisma.js";
 
 const router = Router();
 
@@ -15,7 +15,6 @@ router.get(
   requireAdmin,
   async (req, res) => {
     try {
-
       const [
         userCount,
         gameCount,
@@ -26,8 +25,7 @@ router.get(
         prisma.promotion.count()
       ]);
 
-      res.json({
-
+      return res.json({
         message: "Admin access granted",
 
         admin: {
@@ -42,20 +40,14 @@ router.get(
           games: gameCount,
           promotions: promotionCount
         }
-
       });
 
     } catch (error) {
+      console.error("ADMIN DASHBOARD ERROR:", error);
 
-      console.error(
-        "ADMIN DASHBOARD ERROR:",
-        error
-      );
-
-      res.status(500).json({
+      return res.status(500).json({
         error: "Failed to load admin dashboard"
       });
-
     }
   }
 );
@@ -70,43 +62,30 @@ router.get(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-
     try {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true
+        },
 
-      const users =
-        await prisma.user.findMany({
-
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true
-          },
-
-          orderBy: {
-            id: "desc"
-          }
-
-        });
-
-      res.json({
-        users
+        orderBy: {
+          id: "desc"
+        }
       });
+
+      return res.json({ users });
 
     } catch (error) {
+      console.error("ADMIN USERS ERROR:", error);
 
-      console.error(
-        "ADMIN USERS ERROR:",
-        error
-      );
-
-      res.status(500).json({
+      return res.status(500).json({
         error: "Failed to load users"
       });
-
     }
-
   }
 );
 
@@ -120,85 +99,64 @@ router.patch(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-
     try {
+      const userId = Number(req.params.id);
+      const { role } = req.body || {};
 
-      const userId =
-        Number(req.params.id);
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).json({
+          error: "Invalid user ID"
+        });
+      }
 
-      const { role } =
-        req.body;
-
-
-      if (
-        !["USER", "ADMIN"]
-        .includes(role)
-      ) {
-
+      if (!["USER", "ADMIN"].includes(role)) {
         return res.status(400).json({
           error: "Invalid role"
         });
-
       }
 
-
-      if (
-        userId === req.user.id
-      ) {
-
+      if (userId === req.user.id) {
         return res.status(400).json({
-          error:
-            "You cannot change your own role"
+          error: "You cannot change your own role"
         });
-
       }
 
+      const user = await prisma.user.update({
+        where: {
+          id: userId
+        },
 
-      const user =
-        await prisma.user.update({
+        data: {
+          role
+        },
 
-          where: {
-            id: userId
-          },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true
+        }
+      });
 
-          data: {
-            role: role
-          },
-
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true
-          }
-
-        });
-
-
-      res.json({
-
-        message:
-          "User role updated successfully",
-
+      return res.json({
+        message: "User role updated successfully",
         user
-
       });
 
     } catch (error) {
+      console.error("CHANGE ROLE ERROR:", error);
 
-      console.error(
-        "CHANGE ROLE ERROR:",
-        error
-      );
+      if (error.code === "P2025") {
+        return res.status(404).json({
+          error: "User not found"
+        });
+      }
 
-      res.status(500).json({
-        error:
-          "Failed to update user role"
+      return res.status(500).json({
+        error: "Failed to update user role"
       });
-
     }
-
   }
 );
 
@@ -212,55 +170,44 @@ router.delete(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-
     try {
+      const userId = Number(req.params.id);
 
-      const userId =
-        Number(req.params.id);
-
-
-      if (
-        userId === req.user.id
-      ) {
-
+      if (!Number.isInteger(userId) || userId <= 0) {
         return res.status(400).json({
-          error:
-            "You cannot delete yourself"
+          error: "Invalid user ID"
         });
-
       }
 
+      if (userId === req.user.id) {
+        return res.status(400).json({
+          error: "You cannot delete yourself"
+        });
+      }
 
       await prisma.user.delete({
-
         where: {
           id: userId
         }
-
       });
 
-
-      res.json({
-
-        message:
-          "User deleted successfully"
-
+      return res.json({
+        message: "User deleted successfully"
       });
 
     } catch (error) {
+      console.error("DELETE USER ERROR:", error);
 
-      console.error(
-        "DELETE USER ERROR:",
-        error
-      );
+      if (error.code === "P2025") {
+        return res.status(404).json({
+          error: "User not found"
+        });
+      }
 
-      res.status(500).json({
-        error:
-          "Failed to delete user"
+      return res.status(500).json({
+        error: "Failed to delete user"
       });
-
     }
-
   }
 );
 
@@ -274,37 +221,22 @@ router.get(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-
     try {
-
-      const promotions =
-        await prisma.promotion.findMany({
-
-          orderBy: {
-            createdAt: "desc"
-          }
-
-        });
-
-
-      res.json({
-        promotions
+      const promotions = await prisma.promotion.findMany({
+        orderBy: {
+          createdAt: "desc"
+        }
       });
+
+      return res.json({ promotions });
 
     } catch (error) {
+      console.error("ADMIN PROMOTIONS ERROR:", error);
 
-      console.error(
-        "ADMIN PROMOTIONS ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error:
-          "Failed to load promotions"
+      return res.status(500).json({
+        error: "Failed to load promotions"
       });
-
     }
-
   }
 );
 
