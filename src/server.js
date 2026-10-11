@@ -2,7 +2,8 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { PrismaClient } from "@prisma/client";
+
+import { prisma } from "./lib/prisma.js";
 
 import authRoutes from "./routes/auth.js";
 import gameRoutes from "./routes/games.js";
@@ -10,10 +11,13 @@ import promotionRoutes from "./routes/promotions.js";
 import adminRoutes from "./routes/admin.js";
 import adminGameRoutes from "./routes/gameRoutes.js";
 import depositRoutes from "./routes/deposits.js";
+import settingsRoutes from "./routes/settings.js";
 
 const app = express();
 
-export const prisma = new PrismaClient();
+// =====================================
+// SECURITY
+// =====================================
 
 app.use(helmet());
 
@@ -27,7 +31,6 @@ app.use(
 
 app.use(express.json({ limit: "1mb" }));
 
-
 // =====================================
 // HEALTH CHECK
 // =====================================
@@ -39,30 +42,46 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-
 // =====================================
-// ROUTES
+// AUTH ROUTES
 // =====================================
 
 app.use("/api/auth", authRoutes);
 
+// =====================================
+// ADMIN ROUTES
+// =====================================
+
 app.use("/api/admin", adminRoutes);
 
+// =====================================
+// GAME ROUTES
+// =====================================
+
 app.use("/api/games", gameRoutes);
+app.use("/api/admin/games", adminGameRoutes);
 
-// User promotions
+// =====================================
+// PROMOTION ROUTES
+// =====================================
+
 app.use("/api/promotions", promotionRoutes);
-
-// Admin promotions
 app.use("/api/admin/promotions", promotionRoutes);
 
-app.use("/api/admin/games", adminGameRoutes);
+// =====================================
+// DEPOSIT ROUTES
+// =====================================
 
 app.use("/api/deposits", depositRoutes);
 
+// =====================================
+// SETTINGS ROUTES
+// =====================================
+
+app.use("/api/settings", settingsRoutes);
 
 // =====================================
-// 404
+// 404 HANDLER
 // =====================================
 
 app.use((req, res) => {
@@ -71,26 +90,44 @@ app.use((req, res) => {
   });
 });
 
+// =====================================
+// ERROR HANDLER
+// =====================================
+
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(500).json({
+    error: "Internal server error"
+  });
+});
 
 // =====================================
 // SERVER
 // =====================================
 
-const port =
-  Number(process.env.PORT || 5000);
+const port = Number(process.env.PORT || 5000);
 
-app.listen(port, () => {
-  console.log(
-    `API running on port ${port}`
-  );
+const server = app.listen(port, () => {
+  console.log(`API running on port ${port}`);
 });
 
-
 // =====================================
-// SHUTDOWN
+// GRACEFUL SHUTDOWN
 // =====================================
 
-process.on("SIGINT", async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+async function shutdown() {
+  console.log("Shutting down server...");
+
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
