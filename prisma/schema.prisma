@@ -69,3 +69,31 @@ model Deposit {
   @@index([userId])
   @@index([status])
 }
+
+model PaymentMethod {
+  id          Int      @id @default(autoincrement())
+  name        String
+  details     String
+  icon        String?
+  instructions String?
+  status      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteSetting {
+  id        Int      @id @default(autoincrement())
+  logoUrl   String?
+  updatedAt DateTime @updatedAt
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  linkUrl   String?
+  status    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
